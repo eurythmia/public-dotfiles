@@ -15,6 +15,7 @@ Managed with GNU Stow (one directory per package; paths mirror `$HOME`).
 | `git/`  | `~/.gitconfig` (no `user.*`; includes `~/.gitconfig.local`) |
 | `latex/`| `~/.latexmkrc` |
 | `bin/`  | a few generic helper scripts in `~/bin` |
+| `opencode/` | generic opencode skills (`typst`, `perl`, `mdbook`) into `~/.config/opencode/skills/` |
 
 ## Install
 
