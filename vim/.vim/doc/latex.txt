@@ -1,0 +1,46 @@
+*latex.txt*                       Latex Tips                        9 Jun 2026
+
+Author: 
+
+[ servers ]                                                               
+|latex_tips|                1. Latex Tips                                      
+==============================================================================
+******************************************************************************
+                                                                   [ servers ]
+1. Latex Tips                                                     *latex_tips*
+
+
+Special chars that must be escaped: $ & % # _ { }
+Special Commands ~ ^ \ 
+
+% Can be used to split long input lines where no whitespace or linebreaks are
+allowed
+
+Anything that follows \end{document} is ignored.
+
+Running any .dtx file through latex will generate a .dvi file of documentation.
+
+\\ or \newline starts a newline
+
+\newpage starts a new page.
+
+\mbox{text} forces text to stay on one line.
+
+ligatures can be suppressed by inserting an empty \mbox{} between the two
+letters: eg: shelf\mbox{}ful
+
+\ in front of a space generates space that can't be enlarged.
+
+~ does the same but also prohibits linebreaks.
+
+\@. forces the period to be the end of a sentence even if it follows a capital
+letter.
+
+To indent the first paragraph after the section heading, use the ident first
+package in the tools menu.
+
+*versions of sections don't affect numbering or appear in a table of contents
+
+write vim macro to seach for /\.\s*/
+
+==============================================================================

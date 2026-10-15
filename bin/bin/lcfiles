@@ -1,0 +1,86 @@
+#!/usr/bin/perl -w
+use strict;
+use File::Find;
+use Getopt::Std;
+
+getopts('h');
+my $opt_h = 0;
+if ($#ARGV eq '-1' || $opt_h) {
+print <<EOQ;
+Usage: lcfiles [-h] [directory1] [directory2] etc.
+
+Description: Recursively converts upper and mixed case
+filenames to lower case and changes all spaces to
+underscores.  Useful for 'cleaning' ugly files from Win32.
+
+Examples
+--------
+	lcfiles .
+	Recursively converts all files below the current dir.
+
+	lcfiles -h
+	Prints out this help message.
+EOQ
+exit;
+}
+
+# Main Program #
+print "@ARGV\n";
+finddepth(\&fixem, @ARGV);
+&fix_args_too;
+print "You Got It, Pontiac!\n";
+
+# Subs #
+sub fixem {
+	my $n = lc $_;
+	$n =~ s/[()]/ /g; # get rid of all parentheses.
+	$n =~ s/ +/_/g; # truncate all spaces to _
+	$n =~ s/_+/_/g; # truncate multiple _ to _
+	$n =~ s/[',]//g; # get rid of all apostrophes
+	rename($_, $n) or die "Can't rename $_: $!" unless $_ eq '.';
+}
+
+sub fix_args_too {
+	# This sub is needed because finddepth descends into
+	# the dirs in @ARGV without fixing them.
+	foreach (@ARGV) {
+		my $n = lc $_;
+		# truncate all spaces to _
+		$n =~ s/ +/_/g;
+		$n =~ s/[()]/ /g; # get rid of all parentheses.
+		$n =~ s/ +/_/g; # truncate all spaces to _
+		$n =~ s/_+/_/g; # truncate multiple _ to _
+		$n =~ s/[',]//g; # get rid of all apostrophes and commas
+		rename($_, $n) or die "Can't rename $_: $!" unless $_ eq '.';
+	}
+}
+
+# Pod #
+
+=head1 NAME
+
+lcfiles - version 1.0
+
+=head1 DESCRIPTION
+
+Recursively converts upper and mixed case filenames
+to lower case and changes all spaces to underscores.
+Useful for 'cleaning' ugly files from Win32.
+
+=head1 SYNOPSIS
+
+B<lcfiles [-h] [directory1] [directory2] etc.>
+
+ Example: lcfiles .
+	Recursively converts all files below the current dir.
+
+ Example: lcfiles -h
+	Prints out this help message.
+
+=head1 AUTHOR
+
+Kingsley Gordon E<lt>kingman@ncf.caE<gt>
+
+ Fri Jul 13 15:04:00 EDT 2001
+
+=cut

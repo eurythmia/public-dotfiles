@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+ 
+use Getopt::Std;
+getopts('u');
+
+(my $script_name = $0) =~ s#.*/##;  # $0 = full path to script
+
+vim_fold(';'); # Change comment char as needed.
+
+sub vim_fold {
+	my $comment = shift // '#';
+	my $match = qr/^{$comment}.*({{{|}}})$/;
+
+	if ($opt_u == 1) { # Clear the fold.
+		while (<>) {
+			next if s/$match//e;
+			print;
+		}
+	} else { 
+		my $title = <>;
+		chomp $title;
+
+		my $width = length("$title");
+
+		printf("%s    %-75s{{{\n", $comment, $title);
+		while (<>) {
+			print;
+		}
+		printf("%s    %-75s}}}\n", $comment,  ' ' x $width);
+	}
+}
+
+=pod
+
+=head1 DESCRIPTION
+
+A generic vim filter command to add a manual vim fold via {{{ and }}} to a file.
+Comment character defaults to '#' but it can be changed.
+
+=cut 

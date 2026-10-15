@@ -1,0 +1,13 @@
+[credential "https://github.com"]
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = !/usr/bin/gh auth git-credential
+[pull]
+	rebase = true
+[init]
+	defaultBranch = main
+[core]
+	editor = /usr/bin/vim
+[include]
+	path = ~/.gitconfig.local
+

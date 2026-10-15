@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+################################################
+## Kingman Utilities Series                   ##
+################################################
+## Restores hyperlinks to an HTML file after  ##
+## running the slinx script                   ##
+################################################
+use strict;
+my @links = <>;
+chomp(@links);
+open(TEMP, "_98xTeMP.tmP") or die "There isn't a temp file to open: $!";
+my @file = <TEMP>;
+close(TEMP);
+my $i = 0;
+foreach (@file) {
+	$_ =~ s#«TOKEN»#$links[$i++]#g;
+	print $_;
+}
+unlink <_98xTeMP.tmP> or die "Can't remove tempfile $!";

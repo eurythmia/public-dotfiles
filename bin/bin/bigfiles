@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+no warnings qw /syntax/;
+
+use 5.24.1;
+
+use Number::Bytes::Human qw/format_bytes/;
+ 
+open my $fh => "find . -mount -type f 2>&1 | grep -v 'Permission denied' | " or die;
+ 
+my @sizes = map {[-1 => ""]} 1 .. 10;
+
+while (<$fh>) {
+    chomp;
+    my $size = -s;
+    next if $size < $sizes [-1] [0];
+    foreach my $i (0 .. $#sizes) {
+        if ($size >= $sizes [$i] [0]) {
+            splice @sizes => $i, 0 => [$size => $_];
+            pop @sizes;
+            last;     
+        }
+    }
+}
+ 
+say sprintf('%8s: %s', format_bytes($_->[0]), $_->[1])
+	foreach @sizes;
+
+# https://www.perlmonks.org/?node_id=326053

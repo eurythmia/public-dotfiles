@@ -1,0 +1,301 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use feature 'say';
+
+use Getopt::Long::Descriptive;
+use IO::Pipe;
+use Params::Validate qw/:all/;
+use File::Find::Rule;
+use Data::Dump qw/dump/;
+use HTML::Template;
+use Path::Tiny;
+
+( my $script_name = __FILE__ ) =~ s#.*/##;
+
+my ( $opts, $usage ) = describe_options( "%c %o",
+	[],
+	['MDBook Site Generator'],
+	[],
+	[' Usage '],
+	['-------'],
+	[ 'help|h',  'Display usage message and exit.', { shortcircuit => 1 } ],
+	[ 'init|i',  'Create/Update SUMMARY.md',        { optional     => 1 } ],
+	[ 'serve|s', 'Test site on http://localhost',   { optional     => 1 } ],
+	[ 'build|b', 'Build site on http://localhost',  { optional     => 1 } ],
+	[ 'sitemap', 'Build sitemap',                   { optional     => 1 } ],
+	[ 'clean|c', 'Delete site',                     { optional     => 1 } ],
+	[],
+);
+
+if ($opts->help) {
+	print($usage->text);
+	exit;
+}
+
+dispatch($opts);
+
+### Subs ###
+sub dispatch {
+	my ($opts) = validate_pos( @_, { isa => 'Getopt::Long::Descriptive::Opts' }); 
+
+	my $paths = get_paths("$ENV{HOME}/docs");
+
+	return build_sitemap($paths)
+		if $opts->sitemap;
+
+	if ($opts->init) {
+		new_toml($paths);
+		create_summary($paths);
+		say 'Done!';
+		return;
+	}
+
+	_run_cmd(sprintf('mdbook clean --dest-dir %s', $paths->{target}));
+
+	if ($opts->clean) {
+		say "Deleting '$paths->{target}'";
+		return;
+	}
+
+	if ($opts->serve) {
+		say 'Serving mdbook';
+		_run_cmd(sprintf('mdbook serve ./ --dest-dir %s --open', $paths->{target}));
+		build_sitemap($paths);
+		return;
+	}
+	
+	if ($opts->build) {
+		say 'Building mdbook';
+		_run_cmd(sprintf('mdbook build ./ --dest-dir %s --open', $paths->{target}));
+		build_sitemap($paths);
+		return;
+	}
+
+	print($usage->text);
+	return;
+}
+
+sub create_summary {
+	my ($paths) = validate_pos( @_, { type => HASHREF } );
+	my $files = [ File::Find::Rule->file->name('*.md')->in($paths->{source}) ];
+	my $tree = parse_files($paths, $files);
+	write_summary($tree);
+}
+
+sub parse_files {
+	my ($paths, $files) = validate_pos( @_, { type => HASHREF },{ type => ARRAYREF } );
+	my $tree = {};
+
+	foreach (sort @$files) {
+		next if $_ =~ /(SUMMARY|index|README)\.md$/;
+		(my $path = $_) =~ s#$paths->{source}/##;
+
+		my ($firstline) = path($_)->lines( { count => 1 } );
+		(my $title) = ($firstline) =~ m|^#+\s+(.*)|;
+
+		$title = path($path)->basename
+			unless $title;
+
+		my $dir = path($path)->parent;
+
+		push @{$tree->{$dir}}, {$title =>  $path};
+	}
+
+	die 'No markdown files found!'
+		unless keys %$tree;
+
+	return $tree;
+}
+
+sub write_summary {
+	my ($tree) = validate_pos( @_, { type => HASHREF } );
+
+	if (-e 'SUMMARY.md') {
+		say 'renaming existing SUMMARY.md to .SUMMARY.md';
+		rename 'SUMMARY.md', '.SUMMARY.md';
+	}
+
+	my $fh = new IO::File('SUMMARY.md', 'w');
+	die "Unable to open file for writing: $!"
+		unless $fh;
+
+	say 'writing SUMMARY.md';
+	say $fh "# Summary\n";
+
+	foreach my $chapter (sort keys %$tree) {
+		# say $fh sprintf("\n# %s\n", $chapter);
+		#say $fh sprintf('- [%s](index.md)', $chapter)
+		#	if $chapter =~ /\w+/;
+		foreach my $file (@{$tree->{$chapter}}) {
+			say $fh sprintf("- [%s](%s)", each %$file); # each returns title => path
+		}
+	}
+	undef $fh;
+}
+
+sub new_toml {
+	my ($paths) = validate_pos( @_, { type => HASHREF } );
+	#die dump $paths;
+
+	return
+		if -e sprintf('%s/book.toml', $paths->{source});
+
+	say 'Writing book.toml';
+
+	my $toml =<<~'EOQ';
+	[book]
+	title = "<tmpl_var title>"
+	language = "en"
+	multilingual = false
+	src = "./"
+
+	[build]
+	build-dir="<tmpl_var target>"
+
+	[output.html]
+	default-theme = "rust"
+
+	[preprocessor.toc]
+	command = "mdbook-toc"
+	renderer = ["html"]
+	EOQ
+
+	my $template = HTML::Template->new(scalarref => \$toml, global_vars => 1);
+	$template->param('title' => ucfirst($paths->{dir}));
+	$template->param('target' => $paths->{target});
+	my $fh = new IO::File('book.toml', 'w');
+	print $fh $template->output;
+}
+
+sub get_paths {
+	my ($site_root) = validate_pos( @_, { type => SCALAR } );
+	my $doc_root = Path::Tiny->cwd; 
+	my $dir_name = "$doc_root";
+	$dir_name =~ s#$site_root/##;
+	# Books outside ~/docs: the site-root strip above won't match, leaving the
+	# full absolute cwd. Fall back to the directory basename so the target stays
+	# a sane ~/www/<name> instead of nesting the whole path under ~/www.
+	$dir_name = $doc_root->basename
+		if $dir_name eq "$doc_root";
+
+	my $paths = {};
+	$paths->{target} = sprintf('%s/www/%s', $ENV{HOME}, $dir_name);
+	$paths->{source} = "$doc_root"; # stringify obj.
+	$paths->{dir} = $dir_name;
+	$paths->{title} = sprintf('%s Notes', ucfirst $dir_name);
+	return $paths;
+}
+
+sub _run_cmd {
+	my ($cmd, $cache) = validate_pos(@_, { type => SCALAR },{ type => SCALAR, optional => 1 });
+
+	#die "Can't find executable '$cmd'"
+	#	unless -e $cmd;
+
+	my @output;
+
+	local $| = 1;
+
+	my $pipe = IO::Pipe->new();
+	$pipe->reader($cmd);
+
+	while (<$pipe>) {
+		next unless $_;
+
+		defined $cache
+			? push @output, $_
+			: print $_;
+	}
+
+	undef $pipe;
+	return \@output;
+}
+
+sub build_sitemap {
+	my ($paths) = validate_pos( @_, { type => HASHREF } );
+
+	my $pipe = IO::Pipe->new();
+	$pipe->reader(sprintf('tree -P *.html -H /%s %s', @$paths{qw/dir target/}));
+	undef $/;
+	my $tree = <$pipe>;
+	#die $tree;
+	my $regex = qr#.*?(<style.*?</style>).*</h1><p>(.*?)\s+<br><br>#ism;
+	my ($css, $sitemap) = ($tree =~ /$regex/);
+	#die $sitemap;
+	my $div = '<div id="tree" style="line-height: normal; font-family: courier, monospace, sans-serif;">';
+	$sitemap = sprintf("%s%s\n</div>", $div, $sitemap);
+	#die dump $sitemap;
+
+	my $index_file = sprintf('%s/www/%s/index.html', $ENV{HOME}, $paths->{dir});
+
+	my $fh = new IO::File($index_file, 'r+');
+
+	die "Unable to open $index_file: $!"
+		unless $fh;
+
+	my $idx = <$fh>;
+
+	$idx =~ s/REPLACE/$sitemap/e;
+
+	$fh->seek(0,0);
+	print $fh $idx;
+
+	undef $fh;
+}
+
+=pod
+
+# Summary
+
+- [mdBook](README.md)
+- [Command Line Tool](cli/README.md)
+    - [init](cli/init.md)
+    - [build](cli/build.md)
+    - [watch](cli/watch.md)
+    - [serve](cli/serve.md)
+    - [test](cli/test.md)
+    - [clean](cli/clean.md)
+- [Format](format/README.md)
+    - [SUMMARY.md](format/summary.md)
+    - [Configuration](format/config.md)
+    - [Theme](format/theme/README.md)
+        - [index.hbs](format/theme/index-hbs.md)
+        - [Syntax highlighting](format/theme/syntax-highlighting.md)
+        - [Editor](format/theme/editor.md)
+    - [MathJax Support](format/mathjax.md)
+    - [mdBook specific features](format/mdbook.md)
+- [Continuous Integration](continuous-integration.md)
+- [For Developers](for_developers/README.md)
+    - [Preprocessors](for_developers/preprocessors.md)
+    - [Alternative Backends](for_developers/backends.md)
+
+-----------
+
+[Contributors](misc/contributors.md)
+
+## Mdbook
+
+### Binaries
+
+*build via cargo*
+
+- sudo cargo install mdbook
+- sudo cargo install mdbook-toc
+
+*or grab binaries*
+
+- Grab the latest binary from [here](https://github.com/rust-lang/mdBook/releases).
+ - Unzip it and copy it to your bin directory.  Soo simple!
+- [mdbook-toc](https://fnordig.de/2019/07/11/mdbook-toc-and-mermaid-preprocessors/)
+ - https://github.com/badboy/mdbook-toc/releases
+
+If toc isn't working you probably have trailing space around this:
+~~~
+<!-- toc -->
+~~~
+
+### Generating pages
+
+- mdbook watch 

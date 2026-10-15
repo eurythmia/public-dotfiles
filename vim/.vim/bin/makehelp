@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use 5.20.0;
+
+use FindBin;
+use lib "$FindBin::Bin";
+ 
+use VimHelpGenerator;
+
+my $opts = {
+	ini_dir  => "$ENV{HOME}/.vim/vimhelp",
+	help_dir => "$ENV{HOME}/.vim/doc",
+	vim => "/user/bin/vim",
+};
+
+new VimHelpGenerator($opts);
+
+=pod
+
+Generates vim help files from ini files.
+
+You should put the following at the top your ini file:
+
+[metadata]
+author=foo <foo@foo.com>
+title=This is my Laundry list
+
+=cut

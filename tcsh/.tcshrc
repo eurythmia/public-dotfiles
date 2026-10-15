@@ -1,0 +1,35 @@
+set prompt='\n%{\033[31m%}%B[%m] %{\033[0m%}%b%~/>'
+bindkey -v
+set nobeep
+set visiblebell
+set autolist
+set color
+set colorcat
+set inputmode insert
+setenv EDITOR /usr/bin/vim
+setenv VISUAL $EDITOR
+setenv PAGER less
+setenv DISPLAY :0.0
+setenv TERM xterm-256color
+
+setenv ELECTRON_DISABLE_GPU 1
+setenv ELECTRON_ENABLE_LOGGING true
+setenv ELECTRON_ENABLE_STACK_DUMPING true
+
+alias vi /usr/bin/vim
+alias ls 'ls -F --color'
+alias clearview 'rm -v ~/.vim_viewdir/*'
+alias docs cd ~/docs
+alias dev cd ~/dev
+alias bin cd ~/bin
+alias dl cd ~/Downloads
+alias ll ls -lastr
+alias gpf 'git add *; git commit --amend --no-edit; git push -f:'
+alias he "vi -c 'help' \!:1 | silent only"
+alias pc "pc < \!*"
+alias pm "aplaymidi -p 20: \!*"
+alias so source ~/.tcshrc
+set path = (~/.local/bin ~/.vim/bin ~/.cargo/bin ~/bin /usr/local/bin $path)
+
+if ( -f ~/.tcshrc_local ) source ~/.tcshrc_local
+if ( -f "$HOME/.cargo/env.tcsh" ) source "$HOME/.cargo/env.tcsh"

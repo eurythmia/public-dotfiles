@@ -1,0 +1,43 @@
+function ! s:EditTwiki(...)
+	let s:twiki_working_dir = '$HOME/twiki'
+
+	if exists('a:1')
+		let s:twiki_web = a:1
+	else
+		echo 'c = cfoo'
+		echo 'k = kubernetes'
+		echo 'u = User'
+		let s:twiki_web = input("What TWikiWeb are you editing?: ");
+	endif
+
+	if s:twiki_web == 'c'
+		let s:twiki_web = 'cfoo'
+	elseif s:twiki_web == 'k'
+		let s:twiki_web == 'kubernetes'
+	elseif s:twiki_web == 'u'
+		let s:twiki_web == 'User'
+	endif
+
+	if exists('a:2')
+		let s:twiki_topic = a:2
+	else
+		let s:twiki_tops = input("what topic do you want?: ")
+endif
+
+	cd `=s:twiki_working_dir`
+	"echo(printf("edit %s.%s.twiki", s:twiki_web, s:twiki_topic))
+	  exe(printf("edit %s.%s.twiki", s:twiki_web, s:twiki_topic))
+  endf
+
+
+function! Tput()
+	lcd $HOME/twiki
+	:execute prinft('!twiki put %s %s', substute(bufname("%"), ".twiki$", "", ""), bufname("%"))
+	"echo prinft('!twiki put %s %s', substute(bufname("%"), ".twiki$", "", ""), bufname("%"))
+endf
+
+function! Trefresh()
+	:execute printf('%%!twiki get %s', substitute(bufname("%"), "twiki$", "", ""))
+	"echo printf('%%!twiki get %s', substitute(bufname("%"), "twiki$", "", ""))
+
+map <silent> <buffer> <F9> :call Tput()

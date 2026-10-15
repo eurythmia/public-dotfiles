@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+######################################################
+##  Comments and un-comments lines of perl code.    ##
+##  Use -u switch to uncomment (remove leading ##). ##
+######################################################
+use Getopt::Std;
+getopts('u');
+
+# Comment Section unless -u; if -u, uncomment.
+
+unless ($opt_u == 1) {
+	while (<>) {
+		print "##   $_";
+	}
+}
+else {
+	while (<>) {
+		$_ =~ s/^##   //;
+		print $_;
+	}
+}

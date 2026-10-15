@@ -1,0 +1,437 @@
+*perl.txt*                      Perl Snippets                       9 Jun 2026
+
+Author: 
+
+[ Core Functions ]                                                        
+|sprintf|                   1. sprintf                                         
+|caller|                    2. caller                                          
+|io::file|                  3. IO::File                                        
+==============================================================================
+[ SQL ]                                                                   
+|rowcount|                  1. SQL Commands                                    
+==============================================================================
+[ Regexes ]                                                               
+|backreferences|            1. Pattern Match Vars                              
+==============================================================================
+[ File IO ]                                                               
+|slurpmode|                 1. Slurp Mode and Paragraph Mode                   
+|hash_of_files|             2. Hash of All Files in a Directory                
+|file_tests|                3. File Test Operators                             
+|stderr|                    4. Capturing STDERR                                
+==============================================================================
+[ Strings ]                                                               
+|EOQ|                       1. Indenting HereDocs                              
+==============================================================================
+[ CGI / HTML ]                                                            
+|cgi_errors|                1. Redirecting CGI Errors                          
+|cgi_forms|                 2. HTML Forms with CGI.pm                          
+==============================================================================
+[ ARRAYS ]                                                                
+|shuffle|                   1. Shuffle an Array                                
+|array2html_table|          2. Display an Array in an HTML Table               
+==============================================================================
+[ ENV ]                                                                   
+|en_passant|                1. Current Script Name                             
+==============================================================================
+[ DATE and TIME ]                                                         
+|yesterday_date|            1. Yesterday's Date, SQL Date                      
+==============================================================================
+[ JavaScript ]                                                            
+|arrays|                    1. Loop Through an Array                           
+|function|                  2. methods                                         
+==============================================================================
+******************************************************************************
+                                                            [ Core Functions ]
+1. sprintf                                                           *sprintf*
+
+
+Between the %  and the format letter, you may specify a an explicit format
+parameter index, such as 2$. By default sprintf will format the next unused
+argument in the list, but this allows you to take the arguments out of order.
+
+Eg:
+
+	printf '%2$d %1$d', 12, 34;      # prints "34 12"
+	printf '%3$d %d %1$d', 1, 2, 3;  # prints "3 1 1"
+==============================================================================
+2. caller                                                             *caller*
+
+
+(caller(0))[3]
+	returns the current package and subroutine.
+
+(caller(1))[3]
+	returns the package and subroutine that called this one.
+
+(my $caller = (caller(1))[3]) =~ s/.*://;
+	returns just the subroutine name that called this one.
+==============================================================================
+3. IO::File                                                    *io::file* *io*
+
+
+r  =>  Open text file for reading. The stream is positioned at the beginning of
+       the file. 
+
+r+ =>  Open for reading and writing. The stream is positioned at the beginning
+       of the file. 
+
+w  =>  Truncate file to zero length or create text file for writing. The stream
+       is positioned at the beginning of the file. 
+
+w+ =>  Open for reading and writing. The file is created if it does not exist,
+       otherwise it is truncated. The stream is positioned at the beginning of
+       the file. 
+
+a  =>  Open for writing. The file is created if it does not exist. The stream is
+       positioned at the end of the file. 
+
+a+ =>  Open for reading and writing. The file is created if it does not exist.
+       The stream is positioned at the end of the file.
+
+
+Examples:
+
+
+my $fh = new IO::File('file', 'r'); # default perms are 0666.
+
+die "Can't open file: $!\n"
+	unless defined $fh;
+
+print <$fh>;
+undef $fh;       # automatically closes the file
+
+my $fh = new IO::File('file', 'r'); # default perms are 0666.
+
+die "Can't open file: $!\n"
+	unless defined $fh;
+
+	undef $/; # Slurp mode.
+	$foo = <$fh>;
+	undef $fh;       # automatically closes the file
+
+my $fh = new IO::File('file', 'w', '0755'); # Executable file.
+
+die "Can't open file: $!\n"
+	unless defined $fh;
+
+print $fh "This is a string\n";
+undef $fh;       # automatically closes the file
+
+==============================================================================
+                                                                       [ SQL ]
+1. SQL Commands                                                     *rowcount*
+
+SET ROWCOUNT 10
+SELECT * FROM FOO
+SET ROWCOUNT 0
+
+Be sure to set the ROWCOUNT both before and after the query. Setting the
+ROWCOUNT to zero indicates that all rows should be returned. If you do not
+reset the ROWCOUNT after issuing the query, subsequent queries will also limit
+the number of rows returned according to the value of ROWCOUNT.
+
+To get the last entry.
+
+set rowcount 1
+select TradeId from Trade order by TradeId desc
+set rowcount 0
+
+Select
+SELECT "column_name" FROM "table_name"
+
+Distinct
+SELECT DISTINCT "column_name"
+FROM "table_name"
+
+Where
+SELECT "column_name"
+FROM "table_name"
+WHERE "condition"
+
+And/Or
+SELECT "column_name"
+FROM "table_name"
+WHERE "simple condition"
+{[AND|OR] "simple condition"}+
+
+In
+SELECT "column_name"
+FROM "table_name"
+WHERE "column_name" IN ('value1', 'value2', ...)
+
+Between
+SELECT "column_name"
+FROM "table_name"
+WHERE "column_name" BETWEEN 'value1' AND 'value2'
+
+Like
+SELECT "column_name"
+FROM "table_name"
+WHERE "column_name" LIKE {PATTERN}
+
+Order By
+SELECT "column_name"
+FROM "table_name"
+[WHERE "condition"]
+ORDER BY "column_name" [ASC, DESC]
+
+Count
+SELECT COUNT("column_name")
+FROM "table_name"
+
+Group By
+SELECT "column_name1", SUM("column_name2")
+FROM "table_name"
+GROUP BY "column_name1"
+
+Having
+SELECT "column_name1", SUM("column_name2")
+FROM "table_name"
+GROUP BY "column_name1"
+HAVING (arithematic function condition)
+
+Create Table
+CREATE TABLE "table_name"
+("column 1" "data_type_for_column_1",
+"column 2" "data_type_for_column_2",
+... )
+
+Drop Table
+DROP TABLE "table_name"
+
+Truncate Table
+TRUNCATE TABLE "table_name"
+
+Insert Into
+INSERT INTO "table_name" ("column1", "column2", ...)
+VALUES ("value1", "value2", ...)
+
+Update
+UPDATE "table_name"
+SET "column_1" = [new value]
+WHERE {condition}
+
+Delete From
+DELETE FROM "table_name"
+WHERE {condition} 
+==============================================================================
+                                                                   [ Regexes ]
+1. Pattern Match Vars                               *backreferences* *regexes*
+
+$+ => Returns the last parenthesized pattern match
+
+$& => Returns the entire matched string
+
+$` => Returns everything before the matched string
+
+$' => Returns everything after the matched string 
+
+Patterns with captures are often used in list context to populate a list of
+values, since the pattern is smart enough to return the captured substrings as
+a list:
+
+($FirstPart, $SecondPart, $ThirdPart) = ($TestString =~ m/(.*)(this)(.*)/);
+
+($first, $last)        =  /^(\w+) (\w+)$/;
+($full, $first, $last) =  /^((\w+) (\w+))$/;
+==============================================================================
+                                                                   [ File IO ]
+1. Slurp Mode and Paragraph Mode                              *slurpmode* *$/*
+
+# Slurp Mode
+
+undef $/;
+open(FILE, "data.htm");
+$html = <FILE>;
+close(FILE);
+
+# Paragraph Mode
+
+$/ = '';
+==============================================================================
+2. Hash of All Files in a Directory                  *hash_of_files* *opendir*
+
+Returns a Hash in which the full path is the key
+and the filename is the value.
+
+sub get_files {
+	my $dir = shift;
+	opendir(DIR, $dir) or die "Can't open $dir: $!";
+	my %all_files = map {$dir . $_, $_} grep(!/\.\.?$/, readdir DIR);
+	close DIR;
+	return \%all_files;
+}
+==============================================================================
+3. File Test Operators                                            *file_tests*
+
+perldoc -f -x
+==============================================================================
+4. Capturing STDERR                                                   *stderr*
+
+perldoc -q stderr
+==============================================================================
+                                                                   [ Strings ]
+1. Indenting HereDocs                                    *EOQ* *EOF* *HEREDOC*
+
+
+# This will also kill all blank lines which may not be what you want.
+(my $foo = <<EOQ) =~ s/^\s+//gm;
+	doler ipsum lorum
+
+	your tesxt goes here!
+EOQ
+
+# This preserves blank lines.
+(my $foo = <<EOQ) =~ s/^\S+\n//gm;
+	doler ipsum lorum
+
+	your tesxt goes here!
+EOQ
+
+==============================================================================
+                                                                [ CGI / HTML ]
+1. Redirecting CGI Errors                                         *cgi_errors*
+
+BEGIN {
+	use CGI::Carp qw/carpout/;
+	open(LOG, ">> error.log") or die "Can't append to error.log: $!\n";
+	&carpout (*LOG);
+}
+
+	OR
+
+use CGI::Carp qw/fatalsToBrowser/;
+==============================================================================
+2. HTML Forms with CGI.pm                             *cgi_forms* *cgi_fields*
+
+$q->startform;
+$q->hidden(-name=>'datafile');
+$q->hidden(-name=>'Index', -value=>"$index")
+$q->textfield(-name=>'Name', -size=>30);
+$q->popup_menu(-name=>'hour', -values=>[1..12], -labels=>$hash_ref);
+$q->textarea(-name=>'foo', -rows=>10, -cols=>10);
+$q->password_field(-name=>'foo', -maxlength=>10);
+$q->radio_group(-name=>'meridiem', -values=>[qw/am pm/]);
+$q->checkbox_group(-name=>'test', -values=>[qw/am pm/], -default=>[qw/am pm/], -linebreak=>'true', -labels=>\%labels);
+$q->checkbox(-name=>'test', -value=>'ON', -checked=>'checked', -label=>'Hi');
+$q->submit(-name=>'create_db', -value=>'New DB')
+$q->endform();
+==============================================================================
+                                                                    [ ARRAYS ]
+1. Shuffle an Array                                                  *shuffle*
+
+use List::Util qw/shuffle/;                   
+my @colors = qw/red green blue white yellow black maroon/;
+my $color = shuffle(@colors);
+print $color;
+==============================================================================
+2. Display an Array in an HTML Table                        *array2html_table*
+
+# Convert an array of data to an array of HTML table rows.
+# Takes 2 parameters: the num of columns and the array ref.
+
+sub table_rows {
+        my ($cols, $aref) = @_;
+        my $len = scalar @$aref;
+        my $padding = $len % $cols ? $cols - ($len % $cols) : 0;
+
+        while ($padding) {
+                push @$aref, '&nbsp;';
+                $len++;
+                $padding--;
+        }
+
+        my $last_row = $len / $cols;
+
+        my @tmp;
+        for my $n (0 .. $cols-1) {
+                $tmp[$n] = [splice @$aref, 0, $last_row];
+        }
+
+        my @output;
+
+        for my $i (0 .. $last_row-1) {
+                push @output, "<tr>";
+                for my $c (0 .. $cols-1) {
+                        push @output, "<td>$tmp[$c][$i]</td>";
+                }
+                push @output, "</tr>\n";
+        }
+        return @output;
+}
+
+my $test = [ qw(a1 b2 c3 d4 e5 f6 g7 h8 i9 j10 k11 L12 m13 n14)];
+# m13 n14 o15 p16)]; # q16 r17 s18 t19 u20 v21 w22 x23 y24 z25) ];
+==============================================================================
+                                                                       [ ENV ]
+1. Current Script Name                            *en_passant* *usage* *__FIL-
+1.                                                                        E__*
+
+(my $script_name = __FILE__) =~ s#.*/##;  # __FILE__ = full path to file
+
+OR
+
+(my $script_name = $0) =~ s#.*/##;        # $0 = full path to script
+==============================================================================
+                                                             [ DATE and TIME ]
+1. Yesterday's Date, SQL Date                      *yesterday_date* *sql_date*
+
+sub get_date {
+    my $time = shift;
+    my ($day, $month, $year) = (localtime $time)[3, 4, 5];
+    return sprintf("%04d-%02d-%02d", $year+1900, $month+1, $day);
+}
+
+sub get_date {
+	my $offset = shift;
+    my $time = time;
+	my ($direction, $length, $unit) = ($offset =~ /^(+|-)(\d+) ?(m|d|y)/i);
+    my ($day, $month, $year) = (localtime $time)[3, 4, 5];
+    return sprintf("%04d-%02d-%02d", $year+1900, $month+1, $day);
+}
+
+sub english_date {
+    my $time = shift;
+	my @months = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
+    my ($day, $month, $year) = (localtime $time)[3, 4, 5];
+    return sprintf("%s %s %04d", $day, $months[$month], $year+1900);
+}
+
+sub sql_date {
+    my $time = shift;
+    my ($sec, $min, $hour, $day, $month, $year) = (localtime $time)[0 .. 5];
+    return sprintf("%04d/%02d/%02d %2d:%2d:%2d", $year+1900, $month+1, $day, $hour, $min, $sec);
+}
+
+# Print the mtime of a file called ./xxd
+	print sql_date( (stat './xxd')[9] ); 
+
+# Print the current time in sql format
+	print sql_date(time);
+ 
+# Number of seconds in a day = 86400;
+	print get_date(time); # today's date
+	print sql_date(time); # today's date
+
+# Yesterday's date
+	print get_date(time - 86400); 
+==============================================================================
+                                                                [ JavaScript ]
+1. Loop Through an Array                                 *arrays* *for* *loop*
+
+function SumCosts(costArray)
+{
+  var sum = 0;
+  for (var i=0; i<costArray.length; i++)
+    sum = sum + costArray[i];
+  return sum;
+}
+==============================================================================
+2. methods                                                 *function* *syntax*
+
+Method calls must include parentheses:
+
+names = ["John", "Andrea", "Charlie", "Sam", "Kate"]
+sorted_names = names.sort()
+document.write(sorted_names) 
+==============================================================================
