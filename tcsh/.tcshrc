@@ -17,7 +17,11 @@ setenv ELECTRON_ENABLE_LOGGING true
 setenv ELECTRON_ENABLE_STACK_DUMPING true
 
 alias vi /usr/bin/vim
-alias ls 'ls -F --color'
+if ( -x /usr/bin/sw_vers ) then
+	alias ls 'ls -FG'
+else
+	alias ls 'ls -F --color'
+endif
 alias clearview 'rm -v ~/.vim_viewdir/*'
 alias docs cd ~/docs
 alias dev cd ~/dev

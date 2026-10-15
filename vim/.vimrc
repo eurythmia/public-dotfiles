@@ -1,5 +1,7 @@
 " LilyPond                                                                 {{{
-	set runtimepath^=/usr/share/lilypond/2.24.1/vim
+	for s:lp in split(glob('/usr/share/lilypond/*/vim') . "\n" . glob('/opt/homebrew/share/lilypond/*/vim') . "\n" . glob('/usr/local/share/lilypond/*/vim'), "\n")
+		execute 'set runtimepath^=' . s:lp
+	endfor
 	autocmd FileType lilypond compiler lilypond
 " }}}
 
